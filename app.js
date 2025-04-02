@@ -34,6 +34,12 @@ let lastActivity = Date.now();
 let mediaRecorder;
 let audioChunks = [];
 let messages = [];
+let typingTimeout;
+let isTyping = false;
+
+// DOM Elements for status indicators
+const onlineStatus = document.getElementById('onlineStatus');
+const typingIndicator = document.getElementById('typingIndicator');
 
 // Initialize Firebase (you'll need to add your Firebase config)
 const firebaseConfig = {
@@ -215,6 +221,57 @@ function initializeSettings() {
     });
 }
 
+// Update online status
+function updateOnlineStatus() {
+    if (!db || !auth.currentUser) return;
+    
+    const userStatusRef = db.collection('status').doc(auth.currentUser.uid);
+    const isOnline = true;
+    
+    userStatusRef.set({
+        online: isOnline,
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    // Set up presence system
+    db.collection('status').onSnapshot((snapshot) => {
+        const onlineUsers = snapshot.docs.filter(doc => doc.data().online).length;
+        onlineStatus.textContent = `${onlineUsers} online`;
+        onlineStatus.className = onlineUsers > 1 ? 'text-xs text-green-400' : 'text-xs text-gray-300';
+    });
+}
+
+// Handle typing indicator
+function handleTyping() {
+    if (!db || !auth.currentUser) return;
+    
+    const userStatusRef = db.collection('status').doc(auth.currentUser.uid);
+    
+    if (!isTyping) {
+        isTyping = true;
+        userStatusRef.update({ typing: true });
+    }
+    
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+        isTyping = false;
+        userStatusRef.update({ typing: false });
+    }, 3000);
+}
+
+// Listen for typing status
+function setupTypingListener() {
+    if (!db || !auth.currentUser) return;
+    
+    db.collection('status').onSnapshot((snapshot) => {
+        const otherUserTyping = snapshot.docs.some(doc => 
+            doc.id !== auth.currentUser.uid && doc.data().typing
+        );
+        
+        typingIndicator.style.display = otherUserTyping ? 'block' : 'none';
+    });
+}
+
 // Chat Functions
 function initializeChat() {
     if (!db) {
@@ -228,6 +285,8 @@ function initializeChat() {
     setupInactivityTimer();
     setupKeyboardShortcuts();
     setupMessageListeners();
+    updateOnlineStatus();
+    setupTypingListener();
 }
 
 function setupInactivityTimer() {
@@ -282,6 +341,14 @@ function addMessageToChat(message) {
     const messageElement = document.createElement('div');
     messageElement.className = `message ${message.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`;
     
+    // Add sender name for received messages
+    if (message.senderId !== auth.currentUser?.uid) {
+        const senderName = document.createElement('div');
+        senderName.className = 'text-xs text-gray-400 mb-1';
+        senderName.textContent = message.senderId === 'user1' ? 'You' : 'Your Partner';
+        messageElement.appendChild(senderName);
+    }
+    
     if (message.type === 'text') {
         messageElement.textContent = message.content;
     } else if (message.type === 'image') {
@@ -310,6 +377,7 @@ async function sendMessage(type, content) {
         type,
         content,
         senderId: auth.currentUser.uid,
+        senderName: auth.currentUser.uid === 'user1' ? 'You' : 'Your Partner',
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
     };
 
@@ -433,6 +501,9 @@ deleteChatBtn.addEventListener('click', async () => {
 document.addEventListener('mousemove', () => lastActivity = Date.now());
 document.addEventListener('keypress', () => lastActivity = Date.now());
 document.addEventListener('touchstart', () => lastActivity = Date.now());
+
+// Add event listener for typing
+messageInput.addEventListener('input', handleTyping);
 
 // Initialize
 initializeSettings();

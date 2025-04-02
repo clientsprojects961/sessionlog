@@ -66,13 +66,20 @@
                 </button>
                 <div class="text-center">
                     <h2 class="text-lg font-semibold">Secret Chat</h2>
-                    <p class="text-xs text-gray-300">Messages auto-delete when closed</p>
+                    <div class="flex items-center justify-center gap-2">
+                        <span id="onlineStatus" class="text-xs text-gray-300">Connecting...</span>
+                        <span id="typingIndicator" class="text-xs text-gray-300 hidden">Typing...</span>
+                    </div>
                 </div>
                 <button id="deleteChatBtn" class="text-white hover:text-red-300 transition-colors p-2 rounded-full hover:bg-white/10">
                     <i class="fas fa-trash text-2xl"></i>
                 </button>
             </div>
-            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4"></div>
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div class="text-center text-gray-400 text-sm mb-4">
+                    <p>Messages auto-delete when closed</p>
+                </div>
+            </div>
             <div class="p-4 bg-[#660000]/80 backdrop-blur-sm safe-area-bottom">
                 <div class="flex gap-2">
                     <input type="text" id="messageInput" 
