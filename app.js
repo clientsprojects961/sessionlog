@@ -48,11 +48,46 @@ const firebaseConfig = {
 // Initialize Firebase only if config is provided
 let db, auth;
 try {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
-    auth = firebase.auth();
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        auth = firebase.auth();
+        
+        // Enable persistence for offline support
+        db.enablePersistence()
+            .catch((err) => {
+                if (err.code === 'failed-precondition') {
+                    console.log('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+                } else if (err.code === 'unimplemented') {
+                    console.log('The current browser does not support persistence.');
+                }
+            });
+            
+        console.log('Firebase initialized successfully');
+    } else {
+        db = firebase.firestore();
+        auth = firebase.auth();
+        console.log('Firebase already initialized');
+    }
 } catch (error) {
-    console.log('Firebase not initialized. Chat features will be disabled.');
+    console.error('Firebase initialization error:', error);
+    showNotification('Failed to connect to chat service', 'error');
+}
+
+// Add error handling for Firebase operations
+function handleFirebaseError(error, operation) {
+    console.error(`Firebase ${operation} error:`, error);
+    let errorMessage = 'An error occurred';
+    
+    if (error.code === 'permission-denied') {
+        errorMessage = 'Access denied. Please check your permissions.';
+    } else if (error.code === 'unavailable') {
+        errorMessage = 'Service temporarily unavailable. Please try again.';
+    } else if (error.code === 'not-found') {
+        errorMessage = 'Resource not found.';
+    }
+    
+    showNotification(errorMessage, 'error');
 }
 
 // Timer Functions
@@ -223,20 +258,24 @@ function setupMessageListeners() {
     db.collection('messages')
         .orderBy('timestamp', 'desc')
         .limit(50)
-        .onSnapshot((snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === 'added') {
-                    const message = {
-                        ...change.doc.data(),
-                        id: change.doc.id
-                    };
-                    // Check if message already exists
-                    if (!messages.some(m => m.id === message.id)) {
-                        addMessageToChat(message);
+        .onSnapshot(
+            (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        const message = {
+                            ...change.doc.data(),
+                            id: change.doc.id
+                        };
+                        if (!messages.some(m => m.id === message.id)) {
+                            addMessageToChat(message);
+                        }
                     }
-                }
-            });
-        });
+                });
+            },
+            (error) => {
+                handleFirebaseError(error, 'listen to messages');
+            }
+        );
 }
 
 function addMessageToChat(message) {
@@ -278,8 +317,7 @@ async function sendMessage(type, content) {
         const docRef = await db.collection('messages').add(message);
         messageInput.value = '';
     } catch (error) {
-        console.error('Error sending message:', error);
-        showNotification('Failed to send message', 'error');
+        handleFirebaseError(error, 'send message');
     }
 }
 
@@ -374,25 +412,19 @@ deleteChatBtn.addEventListener('click', async () => {
     
     if (confirm('Are you sure you want to delete all messages?')) {
         try {
-            // Get all messages from Firestore
             const snapshot = await db.collection('messages').get();
             const batch = db.batch();
             
-            // Add each message to the batch delete
             snapshot.docs.forEach(doc => {
                 batch.delete(doc.ref);
             });
             
-            // Commit the batch
             await batch.commit();
-            
-            // Clear local state
             chatMessages.innerHTML = '';
             messages = [];
             showNotification('Chat history deleted');
         } catch (error) {
-            console.error('Error deleting messages:', error);
-            showNotification('Failed to delete messages', 'error');
+            handleFirebaseError(error, 'delete messages');
         }
     }
 });
