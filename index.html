@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Focus Timer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-black text-white min-h-screen font-['Inter']">
+    <!-- Study Timer Screen -->
+    <div id="timerScreen" class="fixed inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-black to-gray-900">
+        <div class="absolute top-0 right-0 p-4 safe-area-top">
+            <button id="settingsBtn" class="text-white hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-white/10">
+                <i class="fas fa-cog text-2xl"></i>
+            </button>
+        </div>
+        <div class="relative">
+            <div id="timer" class="text-[12rem] font-bold font-mono tracking-tight text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300"></div>
+            <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 text-gray-400 text-sm">FOCUS TIME</div>
+        </div>
+        <div class="flex gap-4 mt-8">
+            <button id="startBtn" class="bg-green-500 hover:bg-green-600 px-8 py-3 rounded-full transition-all transform hover:scale-105 shadow-lg shadow-green-500/20 flex items-center gap-2">
+                <i class="fas fa-play"></i>
+                <span>Start</span>
+            </button>
+            <button id="pauseBtn" class="bg-yellow-500 hover:bg-yellow-600 px-8 py-3 rounded-full transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/20 hidden">
+                <i class="fas fa-pause"></i>
+                <span>Pause</span>
+            </button>
+            <button id="resetBtn" class="bg-red-500 hover:bg-red-600 px-8 py-3 rounded-full transition-all transform hover:scale-105 shadow-lg shadow-red-500/20">
+                <i class="fas fa-redo"></i>
+                <span>Reset</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settingsScreen" class="fixed inset-0 bg-black hidden">
+        <div class="p-6 safe-area-top">
+            <button id="backBtn" class="text-white hover:text-gray-300 transition-colors mb-6">
+                <i class="fas fa-arrow-left text-2xl"></i>
+            </button>
+            <h2 class="text-2xl font-semibold mb-6">Settings</h2>
+            <div class="space-y-6">
+                <div class="bg-gray-900 p-4 rounded-xl">
+                    <label class="block text-sm text-gray-400 mb-2">Timer Duration (minutes)</label>
+                    <input type="number" id="timerDuration" value="25" min="1" max="60" 
+                           class="bg-gray-800 text-white px-4 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-white/20">
+                </div>
+                <div class="h-[50vh] overflow-y-auto" id="settingsScroll">
+                    <!-- Hidden secret option will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secret Chat Screen -->
+    <div id="chatScreen" class="fixed inset-0 bg-gradient-to-br from-[#800000] to-[#660000] hidden">
+        <div class="h-full flex flex-col">
+            <div class="p-4 flex justify-between items-center bg-[#660000]/80 backdrop-blur-sm safe-area-top">
+                <button id="chatBackBtn" class="text-white hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-white/10">
+                    <i class="fas fa-arrow-left text-2xl"></i>
+                </button>
+                <div class="text-center">
+                    <h2 class="text-lg font-semibold">Secret Chat</h2>
+                    <p class="text-xs text-gray-300">Messages auto-delete when closed</p>
+                </div>
+                <button id="deleteChatBtn" class="text-white hover:text-red-300 transition-colors p-2 rounded-full hover:bg-white/10">
+                    <i class="fas fa-trash text-2xl"></i>
+                </button>
+            </div>
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4"></div>
+            <div class="p-4 bg-[#660000]/80 backdrop-blur-sm safe-area-bottom">
+                <div class="flex gap-2">
+                    <input type="text" id="messageInput" 
+                           class="flex-1 bg-white/10 text-white px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-gray-400"
+                           placeholder="Type a message...">
+                    <button id="sendImageBtn" class="text-white hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-white/10">
+                        <i class="fas fa-image text-2xl"></i>
+                    </button>
+                    <button id="voiceNoteBtn" class="text-white hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-white/10">
+                        <i class="fas fa-microphone text-2xl"></i>
+                    </button>
+                    <button id="sendBtn" class="text-white hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-white/10">
+                        <i class="fas fa-paper-plane text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Screen -->
+    <div id="errorScreen" class="fixed inset-0 bg-gray-900 text-white hidden">
+        <div class="h-full flex flex-col items-center justify-center p-4 text-center safe-area-top safe-area-bottom">
+            <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+            <h2 class="text-2xl mb-2">Server Not Found</h2>
+            <p class="text-gray-400 mb-8">Unable to connect to the server. Please try again later.</p>
+            <button id="errorBackBtn" class="bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded-full transition-colors">
+                Go Back
+            </button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="app.js"></script>
+</body>
+</html> 

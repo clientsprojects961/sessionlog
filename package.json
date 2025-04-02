@@ -1,0 +1,12 @@
+{
+  "name": "focus-timer-chat",
+  "version": "1.0.0",
+  "description": "A focus timer with hidden chat functionality",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+} 
