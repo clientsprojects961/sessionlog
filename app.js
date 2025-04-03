@@ -158,7 +158,11 @@ function showNotification(message, type = 'success') {
     notification.className = `fixed bottom-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-lg ${
         type === 'success' ? 'bg-green-500' : 'bg-red-500'
     } text-white font-medium`;
+    
+    // Update message text to use "Notes" instead of "Chat"
+    message = message.replace(/chat/i, 'notes');
     notification.textContent = message;
+    
     document.body.appendChild(notification);
     
     setTimeout(() => {
@@ -183,43 +187,95 @@ async function signInAnonymously() {
 
 // Settings Functions
 function initializeSettings() {
-    const secretOption = document.createElement('div');
-    secretOption.className = 'secret-option';
-    secretOption.innerHTML = `
-        <div class="text-center">
-            <i class="fas fa-heart text-pink-500 text-2xl mb-2"></i>
-            <p class="text-sm text-gray-400">Scroll to the bottom to find something special...</p>
-        </div>
-    `;
-    settingsScroll.appendChild(secretOption);
+    let secretClicks = 0;
+    let lastClickTime = 0;
+    const CLICK_TIMEOUT = 2000; // 2 seconds timeout for secret clicks
+    const REQUIRED_CLICKS = 5; // Number of clicks needed to reveal the chat
 
-    // Show secret option when scrolled to bottom
-    settingsScroll.addEventListener('scroll', () => {
-        const isAtBottom = settingsScroll.scrollHeight - settingsScroll.scrollTop === settingsScroll.clientHeight;
-        if (isAtBottom) {
-            secretOption.classList.add('visible');
+    // Add click listener to the settings screen
+    settingsScreen.addEventListener('click', (e) => {
+        const currentTime = Date.now();
+        
+        // Reset clicks if too much time has passed
+        if (currentTime - lastClickTime > CLICK_TIMEOUT) {
+            secretClicks = 0;
         }
-    });
-
-    secretOption.addEventListener('click', async () => {
-        const password = prompt('Enter the secret password:');
-        if (password === SECRET_PASSWORD) {
-            if (!db) {
-                showNotification('Chat features require Firebase setup', 'error');
-                return;
+        
+        secretClicks++;
+        lastClickTime = currentTime;
+        
+        // Check if we've reached the required number of clicks
+        if (secretClicks === REQUIRED_CLICKS) {
+            const password = prompt('Enter the secret password:');
+            if (password === SECRET_PASSWORD) {
+                if (!db) {
+                    showNotification('Chat features require Firebase setup', 'error');
+                    return;
+                }
+                signInAnonymously().then(signedIn => {
+                    if (signedIn) {
+                        showScreen(chatScreen);
+                        initializeChat();
+                        showNotification('Welcome to our secret chat! 💝');
+                    }
+                });
+            } else {
+                showScreen(errorScreen);
+                showNotification('Incorrect password!', 'error');
             }
-            const signedIn = await signInAnonymously();
-            if (signedIn) {
-                showScreen(chatScreen);
-                initializeChat();
-                showNotification('Welcome to our secret chat! 💝');
-            }
-        } else {
-            showScreen(errorScreen);
-            showNotification('Incorrect password!', 'error');
+            // Reset clicks after attempt
+            secretClicks = 0;
         }
     });
 }
+
+// Add a secret gesture detector
+let touchStartY = 0;
+let touchEndY = 0;
+let lastTouchTime = 0;
+
+document.addEventListener('touchstart', (e) => {
+    touchStartY = e.touches[0].clientY;
+    lastTouchTime = Date.now();
+});
+
+document.addEventListener('touchend', (e) => {
+    touchEndY = e.changedTouches[0].clientY;
+    const currentTime = Date.now();
+    
+    // Check for a quick swipe up gesture
+    if (currentTime - lastTouchTime < 500 && touchStartY - touchEndY > 100) {
+        // If we're on the settings screen, increment the secret counter
+        if (!settingsScreen.classList.contains('hidden')) {
+            let secretClicks = parseInt(localStorage.getItem('secretClicks') || '0');
+            secretClicks++;
+            localStorage.setItem('secretClicks', secretClicks);
+            
+            // Check if we've reached the required number of swipes
+            if (secretClicks === 5) {
+                const password = prompt('Enter the secret password:');
+                if (password === SECRET_PASSWORD) {
+                    if (!db) {
+                        showNotification('Chat features require Firebase setup', 'error');
+                        return;
+                    }
+                    signInAnonymously().then(signedIn => {
+                        if (signedIn) {
+                            showScreen(chatScreen);
+                            initializeChat();
+                            showNotification('Welcome to our secret chat! 💝');
+                        }
+                    });
+                } else {
+                    showScreen(errorScreen);
+                    showNotification('Incorrect password!', 'error');
+                }
+                // Reset counter after attempt
+                localStorage.setItem('secretClicks', '0');
+            }
+        }
+    }
+});
 
 // Update online status
 function updateOnlineStatus() {
@@ -228,34 +284,74 @@ function updateOnlineStatus() {
     const userStatusRef = db.collection('status').doc(auth.currentUser.uid);
     const isOnline = true;
     
+    // Set up presence system with better error handling
     userStatusRef.set({
         online: isOnline,
-        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+        userId: auth.currentUser.uid
+    }).catch(error => {
+        console.error('Error updating online status:', error);
     });
     
-    // Set up presence system
+    // Set up presence system with better state management
     db.collection('status').onSnapshot((snapshot) => {
         const onlineUsers = snapshot.docs.filter(doc => doc.data().online).length;
-        onlineStatus.textContent = `${onlineUsers} online`;
-        onlineStatus.className = onlineUsers > 1 ? 'text-xs text-green-400' : 'text-xs text-gray-300';
+        const statusElement = document.getElementById('onlineStatus');
+        const statusDot = statusElement.querySelector('span:first-child');
+        
+        if (onlineUsers > 1) {
+            statusDot.className = 'w-2 h-2 rounded-full bg-green-500 animate-pulse';
+            statusElement.querySelector('span:last-child').textContent = 'Online';
+        } else {
+            statusDot.className = 'w-2 h-2 rounded-full bg-gray-400';
+            statusElement.querySelector('span:last-child').textContent = 'Offline';
+        }
+    }, error => {
+        console.error('Error listening to online status:', error);
+    });
+
+    // Clean up status when user leaves
+    window.addEventListener('beforeunload', () => {
+        userStatusRef.set({
+            online: false,
+            lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+        });
     });
 }
 
-// Handle typing indicator
-function handleTyping() {
+// Optimize performance with debouncing
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Optimize typing indicator
+const debouncedTyping = debounce((isTyping) => {
     if (!db || !auth.currentUser) return;
     
     const userStatusRef = db.collection('status').doc(auth.currentUser.uid);
-    
+    userStatusRef.update({ typing: isTyping }).catch(error => {
+        console.error('Error updating typing status:', error);
+    });
+}, 300);
+
+function handleTyping() {
     if (!isTyping) {
         isTyping = true;
-        userStatusRef.update({ typing: true });
+        debouncedTyping(true);
     }
     
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => {
         isTyping = false;
-        userStatusRef.update({ typing: false });
+        debouncedTyping(false);
     }, 3000);
 }
 
@@ -268,7 +364,14 @@ function setupTypingListener() {
             doc.id !== auth.currentUser.uid && doc.data().typing
         );
         
-        typingIndicator.style.display = otherUserTyping ? 'block' : 'none';
+        const typingIndicator = document.getElementById('typingIndicator');
+        if (otherUserTyping) {
+            typingIndicator.classList.remove('hidden');
+            typingIndicator.classList.add('flex');
+        } else {
+            typingIndicator.classList.add('hidden');
+            typingIndicator.classList.remove('flex');
+        }
     });
 }
 
@@ -315,7 +418,7 @@ function setupMessageListeners() {
     if (!db) return;
     
     db.collection('messages')
-        .orderBy('timestamp', 'desc')
+        .orderBy('timestamp', 'asc')
         .limit(50)
         .onSnapshot(
             (snapshot) => {
@@ -338,6 +441,11 @@ function setupMessageListeners() {
 }
 
 function addMessageToChat(message) {
+    // Check if message already exists
+    if (messages.some(m => m.id === message.id)) {
+        return;
+    }
+
     const messageElement = document.createElement('div');
     messageElement.className = `message ${message.senderId === auth.currentUser?.uid ? 'sent' : 'received'}`;
     
@@ -355,6 +463,7 @@ function addMessageToChat(message) {
         const img = document.createElement('img');
         img.src = message.content;
         img.className = 'image-message';
+        img.loading = 'lazy'; // Optimize image loading
         messageElement.appendChild(img);
     } else if (message.type === 'voice') {
         const audio = document.createElement('audio');
@@ -363,10 +472,22 @@ function addMessageToChat(message) {
         messageElement.appendChild(audio);
     }
 
-    chatMessages.insertBefore(messageElement, chatMessages.firstChild);
-    messages.push(message);
+    // Use requestAnimationFrame for smooth rendering
+    requestAnimationFrame(() => {
+        chatMessages.appendChild(messageElement);
+        messages.push(message);
+        scrollToBottom();
+    });
 }
 
+// Optimize scroll behavior
+function scrollToBottom() {
+    requestAnimationFrame(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    });
+}
+
+// Update the sendMessage function to scroll to bottom after sending
 async function sendMessage(type, content) {
     if (!db || !auth.currentUser) {
         showNotification('Chat features require Firebase setup', 'error');
@@ -384,6 +505,7 @@ async function sendMessage(type, content) {
     try {
         const docRef = await db.collection('messages').add(message);
         messageInput.value = '';
+        scrollToBottom();
     } catch (error) {
         handleFirebaseError(error, 'send message');
     }

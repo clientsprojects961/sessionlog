@@ -39,19 +39,60 @@
 
     <!-- Settings Screen -->
     <div id="settingsScreen" class="fixed inset-0 bg-black hidden">
-        <div class="p-6 safe-area-top">
-            <button id="backBtn" class="text-white hover:text-gray-300 transition-colors mb-6">
-                <i class="fas fa-arrow-left text-2xl"></i>
-            </button>
-            <h2 class="text-2xl font-semibold mb-6">Settings</h2>
-            <div class="space-y-6">
-                <div class="bg-gray-900 p-4 rounded-xl">
-                    <label class="block text-sm text-gray-400 mb-2">Timer Duration (minutes)</label>
-                    <input type="number" id="timerDuration" value="25" min="1" max="60" 
-                           class="bg-gray-800 text-white px-4 py-2 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-white/20">
-                </div>
-                <div class="h-[50vh] overflow-y-auto" id="settingsScroll">
-                    <!-- Hidden secret option will be added here -->
+        <div class="h-full flex flex-col">
+            <div class="p-4 flex justify-between items-center bg-black/80 backdrop-blur-sm safe-area-top">
+                <button id="backBtn" class="text-white hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-white/10">
+                    <i class="fas fa-arrow-left text-2xl"></i>
+                </button>
+                <h2 class="text-lg font-semibold">Settings</h2>
+            </div>
+            <div id="settingsScroll" class="flex-1 overflow-y-auto p-4">
+                <div class="space-y-6">
+                    <div class="bg-white/5 rounded-lg p-4">
+                        <h3 class="text-lg font-medium mb-4">Timer Settings</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Timer Duration (minutes)</label>
+                                <input type="number" id="timerDuration" value="25" min="1" max="60"
+                                       class="w-full bg-white/10 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Break Duration (minutes)</label>
+                                <input type="number" id="breakDuration" value="5" min="1" max="30"
+                                       class="w-full bg-white/10 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-4">
+                        <h3 class="text-lg font-medium mb-4">Theme Settings</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Background Color</label>
+                                <input type="color" id="bgColor" value="#000000"
+                                       class="w-full bg-white/10 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Text Color</label>
+                                <input type="color" id="textColor" value="#ffffff"
+                                       class="w-full bg-white/10 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-4">
+                        <h3 class="text-lg font-medium mb-4">Sound Settings</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm text-gray-400">Timer Sound</label>
+                                <input type="checkbox" id="timerSound" checked
+                                       class="w-4 h-4 bg-white/10 rounded border-gray-600 text-pink-500 focus:ring-pink-500">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm text-gray-400">Break Sound</label>
+                                <input type="checkbox" id="breakSound" checked
+                                       class="w-4 h-4 bg-white/10 rounded border-gray-600 text-pink-500 focus:ring-pink-500">
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -65,10 +106,16 @@
                     <i class="fas fa-arrow-left text-2xl"></i>
                 </button>
                 <div class="text-center">
-                    <h2 class="text-lg font-semibold">Secret Chat</h2>
+                    <h2 class="text-lg font-semibold">Notes</h2>
                     <div class="flex items-center justify-center gap-2">
-                        <span id="onlineStatus" class="text-xs text-gray-300">Connecting...</span>
-                        <span id="typingIndicator" class="text-xs text-gray-300 hidden">Typing...</span>
+                        <div id="onlineStatus" class="flex items-center gap-1 text-xs">
+                            <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+                            <span>Offline</span>
+                        </div>
+                        <div id="typingIndicator" class="hidden items-center gap-1 text-xs text-gray-300">
+                            <span class="w-2 h-2 rounded-full bg-gray-300 animate-pulse"></span>
+                            <span>Typing...</span>
+                        </div>
                     </div>
                 </div>
                 <button id="deleteChatBtn" class="text-white hover:text-red-300 transition-colors p-2 rounded-full hover:bg-white/10">
@@ -77,14 +124,14 @@
             </div>
             <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
                 <div class="text-center text-gray-400 text-sm mb-4">
-                    <p>Messages auto-delete when closed</p>
+                    <p>Notes will be cleared when closed</p>
                 </div>
             </div>
             <div class="p-4 bg-[#660000]/80 backdrop-blur-sm safe-area-bottom">
                 <div class="flex gap-2">
                     <input type="text" id="messageInput" 
                            class="flex-1 bg-white/10 text-white px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-gray-400"
-                           placeholder="Type a message...">
+                           placeholder="Write a note...">
                     <button id="sendImageBtn" class="text-white hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-white/10">
                         <i class="fas fa-image text-2xl"></i>
                     </button>

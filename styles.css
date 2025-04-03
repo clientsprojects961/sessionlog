@@ -4,6 +4,9 @@
     padding: 0;
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
+    will-change: transform;
+    backface-visibility: hidden;
+    transform: translateZ(0);
 }
 
 body {
@@ -18,6 +21,7 @@ body {
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 6px;
+    background: transparent;
 }
 
 ::-webkit-scrollbar-track {
@@ -28,6 +32,7 @@ body {
 ::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 3px;
+    transform: translateZ(0);
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -75,27 +80,44 @@ body {
 }
 
 /* Message Styles */
+#chatMessages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px;
+    display: flex;
+    flex-direction: column-reverse;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    will-change: transform;
+}
+
 .message {
     max-width: 80%;
     padding: 12px 16px;
     border-radius: 20px;
-    margin-bottom: 8px;
+    margin: 4px 0;
     position: relative;
     animation: messageAppear 0.3s ease-out;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    align-self: flex-start;
+    transform: translateZ(0);
+    will-change: transform;
 }
 
 .message.sent {
     background: rgba(255, 255, 255, 0.1);
     margin-left: auto;
     border-bottom-right-radius: 4px;
+    align-self: flex-end;
 }
 
 .message.received {
     background: rgba(255, 255, 255, 0.15);
     margin-right: auto;
     border-bottom-left-radius: 4px;
+    align-self: flex-start;
 }
 
 .message::before {
@@ -170,11 +192,11 @@ body {
 @keyframes messageAppear {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(10px) translateZ(0);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) translateZ(0);
     }
 }
 
@@ -206,6 +228,7 @@ body {
 @media (max-width: 640px) {
     .message {
         max-width: 90%;
+        transform: translateZ(0);
     }
     
     .message.sent {
@@ -214,6 +237,13 @@ body {
     
     .message.received {
         margin-right: 10%;
+    }
+    
+    /* Reduce animation complexity on mobile */
+    .message {
+        animation: none;
+        opacity: 1;
+        transform: translateY(0) translateZ(0);
     }
 }
 
@@ -245,6 +275,8 @@ body {
     border-radius: 12px;
     cursor: pointer;
     transition: transform 0.3s ease;
+    transform: translateZ(0);
+    will-change: transform;
 }
 
 .image-message:hover {
@@ -287,13 +319,15 @@ body {
 .secret-option {
     opacity: 0;
     transform: translateY(20px);
-    transition: all 0.5s ease;
+    transition: all 0.3s ease;
     cursor: pointer;
     padding: 20px;
     text-align: center;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 16px;
     margin: 20px;
+    transform: translateZ(0);
+    will-change: transform, opacity;
 }
 
 .secret-option.visible {
@@ -360,6 +394,8 @@ input[type="text"] {
     border-radius: 9999px;
     font-size: 0.95rem;
     padding: 10px 16px;
+    transform: translateZ(0);
+    will-change: transform;
 }
 
 input[type="text"]:focus {
@@ -373,10 +409,12 @@ button {
     touch-action: manipulation;
     user-select: none;
     -webkit-user-select: none;
+    transform: translateZ(0);
+    will-change: transform;
 }
 
 button:active {
-    transform: scale(0.98);
+    transform: scale(0.98) translateZ(0);
 }
 
 /* Prevent Text Selection */
