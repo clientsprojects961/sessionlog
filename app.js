@@ -288,30 +288,52 @@ function updateOnlineStatus() {
     userStatusRef.set({
         online: isOnline,
         lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
-        userId: auth.currentUser.uid
+        userId: auth.currentUser.uid,
+        lastActive: firebase.firestore.FieldValue.serverTimestamp()
     }).catch(error => {
         console.error('Error updating online status:', error);
     });
     
     // Set up presence system with better state management
     db.collection('status').onSnapshot((snapshot) => {
-        const onlineUsers = snapshot.docs.filter(doc => doc.data().online).length;
+        const currentTime = Date.now();
         const statusElement = document.getElementById('onlineStatus');
         const statusDot = statusElement.querySelector('span:first-child');
+        const statusText = statusElement.querySelector('span:last-child');
         
-        if (onlineUsers > 1) {
+        // Check for other online users
+        const otherOnlineUsers = snapshot.docs.filter(doc => 
+            doc.id !== auth.currentUser.uid && 
+            doc.data().online && 
+            doc.data().lastActive && 
+            (currentTime - doc.data().lastActive.toDate().getTime()) < 30000 // 30 seconds threshold
+        );
+        
+        if (otherOnlineUsers.length > 0) {
             statusDot.className = 'w-2 h-2 rounded-full bg-green-500 animate-pulse';
-            statusElement.querySelector('span:last-child').textContent = 'Online';
+            statusText.textContent = 'Online';
         } else {
             statusDot.className = 'w-2 h-2 rounded-full bg-gray-400';
-            statusElement.querySelector('span:last-child').textContent = 'Offline';
+            statusText.textContent = 'Offline';
         }
     }, error => {
         console.error('Error listening to online status:', error);
     });
 
+    // Update last active timestamp periodically
+    const activityInterval = setInterval(() => {
+        if (db && auth.currentUser) {
+            userStatusRef.update({
+                lastActive: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(error => {
+                console.error('Error updating last active:', error);
+            });
+        }
+    }, 15000); // Update every 15 seconds
+
     // Clean up status when user leaves
     window.addEventListener('beforeunload', () => {
+        clearInterval(activityInterval);
         userStatusRef.set({
             online: false,
             lastSeen: firebase.firestore.FieldValue.serverTimestamp()
@@ -337,10 +359,13 @@ const debouncedTyping = debounce((isTyping) => {
     if (!db || !auth.currentUser) return;
     
     const userStatusRef = db.collection('status').doc(auth.currentUser.uid);
-    userStatusRef.update({ typing: isTyping }).catch(error => {
+    userStatusRef.update({ 
+        typing: isTyping,
+        lastTypingUpdate: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(error => {
         console.error('Error updating typing status:', error);
     });
-}, 300);
+}, 500); // Increased debounce time
 
 function handleTyping() {
     if (!isTyping) {
@@ -352,7 +377,7 @@ function handleTyping() {
     typingTimeout = setTimeout(() => {
         isTyping = false;
         debouncedTyping(false);
-    }, 3000);
+    }, 2000); // Reduced timeout to 2 seconds
 }
 
 // Listen for typing status
@@ -360,11 +385,17 @@ function setupTypingListener() {
     if (!db || !auth.currentUser) return;
     
     db.collection('status').onSnapshot((snapshot) => {
+        const currentTime = Date.now();
+        const typingIndicator = document.getElementById('typingIndicator');
+        
+        // Check for other users typing
         const otherUserTyping = snapshot.docs.some(doc => 
-            doc.id !== auth.currentUser.uid && doc.data().typing
+            doc.id !== auth.currentUser.uid && 
+            doc.data().typing && 
+            doc.data().lastTypingUpdate && 
+            (currentTime - doc.data().lastTypingUpdate.toDate().getTime()) < 3000 // 3 seconds threshold
         );
         
-        const typingIndicator = document.getElementById('typingIndicator');
         if (otherUserTyping) {
             typingIndicator.classList.remove('hidden');
             typingIndicator.classList.add('flex');
@@ -382,9 +413,15 @@ function initializeChat() {
         return;
     }
     
+    // Show loading state
+    chatMessages.innerHTML = `
+        <div class="flex items-center justify-center h-full">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        </div>
+    `;
+    
     lastActivity = Date.now();
     messages = [];
-    chatMessages.innerHTML = '';
     setupInactivityTimer();
     setupKeyboardShortcuts();
     setupMessageListeners();
@@ -463,21 +500,30 @@ function addMessageToChat(message) {
         const img = document.createElement('img');
         img.src = message.content;
         img.className = 'image-message';
-        img.loading = 'lazy'; // Optimize image loading
+        img.loading = 'lazy';
+        img.onerror = () => {
+            img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%236b7280">Failed to load image</text></svg>';
+        };
         messageElement.appendChild(img);
     } else if (message.type === 'voice') {
         const audio = document.createElement('audio');
         audio.src = message.content;
         audio.controls = true;
+        audio.onerror = () => {
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'text-red-500 text-sm mt-1';
+            errorMsg.textContent = 'Failed to load audio';
+            messageElement.appendChild(errorMsg);
+        };
         messageElement.appendChild(audio);
     }
 
-    // Use requestAnimationFrame for smooth rendering
-    requestAnimationFrame(() => {
-        chatMessages.appendChild(messageElement);
-        messages.push(message);
-        scrollToBottom();
-    });
+    // Add message to the end of the container
+    chatMessages.appendChild(messageElement);
+    messages.push(message);
+    
+    // Scroll to bottom for new messages
+    scrollToBottom();
 }
 
 // Optimize scroll behavior
@@ -487,11 +533,46 @@ function scrollToBottom() {
     });
 }
 
-// Update the sendMessage function to scroll to bottom after sending
+// Update the sendMessage function to ensure proper message ordering
 async function sendMessage(type, content) {
     if (!db || !auth.currentUser) {
         showNotification('Chat features require Firebase setup', 'error');
         return;
+    }
+
+    // Check message size limits
+    if (type === 'text' && content.length > 1000) {
+        showNotification('Message is too long (max 1000 characters)', 'error');
+        return;
+    }
+
+    if (type === 'image') {
+        const img = new Image();
+        img.src = content;
+        await new Promise((resolve, reject) => {
+            img.onload = () => {
+                if (img.width > 1920 || img.height > 1080) {
+                    reject(new Error('Image is too large (max 1920x1080)'));
+                } else {
+                    resolve();
+                }
+            };
+            img.onerror = () => reject(new Error('Invalid image'));
+        });
+    }
+
+    if (type === 'voice') {
+        const audio = new Audio(content);
+        await new Promise((resolve, reject) => {
+            audio.onloadedmetadata = () => {
+                if (audio.duration > 300) { // 5 minutes max
+                    reject(new Error('Voice note is too long (max 5 minutes)'));
+                } else {
+                    resolve();
+                }
+            };
+            audio.onerror = () => reject(new Error('Invalid audio'));
+        });
     }
 
     const message = {
@@ -503,7 +584,7 @@ async function sendMessage(type, content) {
     };
 
     try {
-        const docRef = await db.collection('messages').add(message);
+        await db.collection('messages').add(message);
         messageInput.value = '';
         scrollToBottom();
     } catch (error) {

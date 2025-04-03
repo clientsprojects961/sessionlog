@@ -68,10 +68,44 @@ body {
 }
 
 #timer {
-    font-size: clamp(4rem, 15vw, 12rem);
-    line-height: 1;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-    animation: glow 2s infinite;
+    font-family: 'Inter', monospace;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    letter-spacing: -0.05em;
+}
+
+#timer.completed {
+    animation: timerComplete 1s ease-in-out;
+    color: #4CAF50;
+}
+
+@keyframes timerComplete {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Timer Button Styles */
+#startBtn, #pauseBtn, #resetBtn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+#startBtn i, #pauseBtn i, #resetBtn i {
+    font-size: 0.9rem;
+}
+
+/* Focus Mode Text */
+.text-gray-400 {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
 }
 
 /* Chat Screen */
@@ -85,7 +119,7 @@ body {
     overflow-y: auto;
     padding: 4px;
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
@@ -101,7 +135,6 @@ body {
     animation: messageAppear 0.3s ease-out;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    align-self: flex-start;
     transform: translateZ(0);
     will-change: transform;
 }
@@ -110,14 +143,12 @@ body {
     background: rgba(255, 255, 255, 0.1);
     margin-left: auto;
     border-bottom-right-radius: 4px;
-    align-self: flex-end;
 }
 
 .message.received {
     background: rgba(255, 255, 255, 0.15);
     margin-right: auto;
     border-bottom-left-radius: 4px;
-    align-self: flex-start;
 }
 
 .message::before {
@@ -245,6 +276,15 @@ body {
         opacity: 1;
         transform: translateY(0) translateZ(0);
     }
+    
+    #timer {
+        font-size: clamp(6rem, 20vw, 12rem);
+    }
+    
+    #startBtn, #pauseBtn, #resetBtn {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.85rem;
+    }
 }
 
 /* Voice Note Styles */
@@ -338,12 +378,6 @@ body {
 .secret-option:hover {
     background: rgba(255, 255, 255, 0.1);
     transform: translateY(-2px);
-}
-
-/* Timer Animation */
-.completed {
-    animation: pulse 1s infinite;
-    color: #4CAF50;
 }
 
 /* Landscape Mode Optimizations */

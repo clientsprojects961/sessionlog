@@ -18,22 +18,29 @@
             </button>
         </div>
         <div class="relative">
+            <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 text-gray-400 text-sm tracking-wider">FOCUS MODE</div>
             <div id="timer" class="text-[12rem] font-bold font-mono tracking-tight text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300"></div>
-            <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 text-gray-400 text-sm">FOCUS TIME</div>
+            <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 text-gray-400 text-sm tracking-wider">STUDY SESSION</div>
         </div>
-        <div class="flex gap-4 mt-8">
-            <button id="startBtn" class="bg-green-500 hover:bg-green-600 px-8 py-3 rounded-full transition-all transform hover:scale-105 shadow-lg shadow-green-500/20 flex items-center gap-2">
-                <i class="fas fa-play"></i>
-                <span>Start</span>
-            </button>
-            <button id="pauseBtn" class="bg-yellow-500 hover:bg-yellow-600 px-8 py-3 rounded-full transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/20 hidden">
-                <i class="fas fa-pause"></i>
-                <span>Pause</span>
-            </button>
-            <button id="resetBtn" class="bg-red-500 hover:bg-red-600 px-8 py-3 rounded-full transition-all transform hover:scale-105 shadow-lg shadow-red-500/20">
-                <i class="fas fa-redo"></i>
-                <span>Reset</span>
-            </button>
+        <div class="flex flex-col items-center gap-4 mt-8">
+            <div class="flex gap-4">
+                <button id="startBtn" class="bg-green-500 hover:bg-green-600 px-8 py-3 rounded-full transition-all transform hover:scale-105 shadow-lg shadow-green-500/20 flex items-center gap-2">
+                    <i class="fas fa-play"></i>
+                    <span>Start</span>
+                </button>
+                <button id="pauseBtn" class="bg-yellow-500 hover:bg-yellow-600 px-8 py-3 rounded-full transition-all transform hover:scale-105 shadow-lg shadow-yellow-500/20 hidden">
+                    <i class="fas fa-pause"></i>
+                    <span>Pause</span>
+                </button>
+                <button id="resetBtn" class="bg-red-500 hover:bg-red-600 px-8 py-3 rounded-full transition-all transform hover:scale-105 shadow-lg shadow-red-500/20">
+                    <i class="fas fa-redo"></i>
+                    <span>Reset</span>
+                </button>
+            </div>
+            <div class="text-gray-400 text-sm tracking-wider mt-4">Pomodoro Technique</div>
+        </div>
+        <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-gray-500 text-xs tracking-wider">
+            Stay focused, stay productive
         </div>
     </div>
 
@@ -128,19 +135,23 @@
                 </div>
             </div>
             <div class="p-4 bg-[#660000]/80 backdrop-blur-sm safe-area-bottom">
-                <div class="flex gap-2">
-                    <input type="text" id="messageInput" 
-                           class="flex-1 bg-white/10 text-white px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-gray-400"
-                           placeholder="Write a note...">
-                    <button id="sendImageBtn" class="text-white hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-white/10">
-                        <i class="fas fa-image text-2xl"></i>
-                    </button>
-                    <button id="voiceNoteBtn" class="text-white hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-white/10">
-                        <i class="fas fa-microphone text-2xl"></i>
-                    </button>
-                    <button id="sendBtn" class="text-white hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-white/10">
-                        <i class="fas fa-paper-plane text-2xl"></i>
-                    </button>
+                <div class="flex gap-2 items-center">
+                    <div class="flex-1 min-w-0">
+                        <input type="text" id="messageInput" 
+                               class="w-full bg-white/10 text-white px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-gray-400"
+                               placeholder="Write a note...">
+                    </div>
+                    <div class="flex gap-2 shrink-0">
+                        <button id="sendImageBtn" class="text-white hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-white/10">
+                            <i class="fas fa-image text-xl"></i>
+                        </button>
+                        <button id="voiceNoteBtn" class="text-white hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-white/10">
+                            <i class="fas fa-microphone text-xl"></i>
+                        </button>
+                        <button id="sendBtn" class="text-white hover:text-gray-300 transition-colors p-2 rounded-full hover:bg-white/10">
+                            <i class="fas fa-paper-plane text-xl"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
